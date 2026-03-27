@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rezerwacje — Sauna, Jacuzzi & Balia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f3ef;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --text-hint: #a0a09a;
+    --blue: #1a6bbd;
+    --blue-bg: #e8f1fb;
+    --blue-border: #aac8ef;
+    --green: #2d7a3a;
+    --green-bg: #e6f4e8;
+    --green-border: #9ecfa6;
+    --red: #b03030;
+    --red-bg: #fceaea;
+    --red-border: #e8a8a8;
+    --amber: #8a5a00;
+    --amber-bg: #fef3dc;
+    --amber-border: #e8c87a;
+    --teal: #1a6e5a;
+    --teal-bg: #e4f4f0;
+    --teal-border: #8ecfc4;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .app { max-width: 760px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 2rem; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header p { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+
+  .date-row {
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+    margin-bottom: 1.75rem;
+  }
+  .date-row label { font-size: 13px; color: var(--text-muted); }
+  .date-row input[type=date] {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 7px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .zones { display: flex; flex-direction: column; gap: 14px; }
+
+  .zone-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .zone-head {
+    padding: 11px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .zone-head-name { font-size: 14px; font-weight: 600; }
+  .zone-head-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .zone-badges { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+
+  .badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .b-sauna { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .b-jacuzzi { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .b-balia { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+
+  .slot-row {
+    display: grid;
+    grid-template-columns: 105px 1fr auto;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .slot-row:last-child { border-bottom: none; }
+  .slot-blocked { background: #fafaf8; }
+
+  .slot-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .slot-info { display: flex; flex-direction: column; gap: 2px; }
+  .slot-free { font-size: 13px; color: var(--text-hint); font-style: italic; }
+  .slot-guest { font-size: 13px; font-weight: 600; }
+  .slot-worker { font-size: 11px; color: var(--text-muted); }
+  .facility-chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+  .chip { font-size: 10px; font-weight: 500; padding: 1px 7px; border-radius: 20px; }
+
+  .pay-pill { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-top: 3px; display: inline-block; }
+  .pill-included { background: var(--blue-bg); color: var(--blue); }
+  .pill-paid { background: var(--green-bg); color: var(--green); }
+  .pill-unpaid { background: var(--red-bg); color: var(--red); }
+
+  .btn-book {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--blue-border);
+    background: var(--blue-bg);
+    color: var(--blue);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .btn-book:hover { background: #d4e6f8; }
+
+  .btn-taken {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 6px 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .btn-taken:hover { background: var(--surface2); }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 14px; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 100;
+    align-items: flex-start; justify-content: center;
+    padding: 5vh 1rem 2rem;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    padding: 1.5rem;
+    width: 400px;
+    max-width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+  .step-indicator { display: flex; align-items: center; gap: 6px; margin-bottom: 1.25rem; }
+  .step-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .step-dot.active { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
+  .step-dot.done { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .step-line { flex: 1; height: 1px; background: var(--border); }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  .field-label {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px; display: block; margin-top: 14px;
+  }
+  .field-label:first-child { margin-top: 0; }
+
+  input[type=text], input[type=number], textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; width: 100%;
+    padding: 8px 11px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=number]:focus, textarea:focus { border-color: var(--blue); }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .fac-checkboxes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .fac-cb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text); transition: all 0.15s; user-select: none;
+  }
+  .fac-cb input { display: none; }
+  .fac-cb.selected { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
+
+  .payment-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .pay-opt-row {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; cursor: pointer; color: var(--text);
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm); transition: all 0.15s;
+  }
+  .pay-opt-row input[type=radio] { accent-color: var(--blue); }
+
+  .amount-block { margin-top: 12px; }
+
+  .pay-status-group { display: flex; gap: 8px; margin-top: 6px; }
+  .pay-status-btn {
+    font-family: 'DM Sans', sans-serif;
+    flex: 1; padding: 9px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text-muted); transition: all 0.15s;
+  }
+  .pay-status-btn.sel-paid { border-color: var(--green-border); background: var(--green-bg); color: var(--green); }
+  .pay-status-btn.sel-unpaid { border-color: var(--red-border); background: var(--red-bg); color: var(--red); }
+
+  .error-msg { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
+
+  .modal-nav { display: flex; gap: 8px; margin-top: 1.25rem; justify-content: flex-end; }
+
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    padding: 8px 20px; border-radius: var(--radius-sm);
+    background: var(--blue-bg); border: 1px solid var(--blue-border);
+    color: var(--blue); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary:hover { background: #d4e6f8; }
+
+  .btn-secondary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--surface2); }
+
+  .detail-modal {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    padding: 1.5rem; width: 390px; max-width: 100%;
+  }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; gap: 12px;
+  }
+  .detail-row:last-of-type { border-bottom: none; }
+  .detail-key { color: var(--text-muted); white-space: nowrap; }
+  .detail-val { font-weight: 500; text-align: right; }
+
+  .dm-footer { display: flex; gap: 8px; margin-top: 1.1rem; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .dm-pay-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dm-pay-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 5px 11px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .dm-pay-btn:hover { background: var(--surface2); }
+  .dm-pay-btn.active-included { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
+  .dm-pay-btn.active-paid { border-color: var(--green-border); background: var(--green-bg); color: var(--green); }
+  .dm-pay-btn.active-unpaid { border-color: var(--red-border); background: var(--red-bg); color: var(--red); }
+
+  .btn-danger-sm {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; padding: 5px 11px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--red-border);
+    background: transparent; color: var(--red);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger-sm:hover { background: var(--red-bg); }
+
+  @media (max-width: 500px) {
+    .slot-row { grid-template-columns: 85px 1fr auto; }
+    .modal, .detail-modal { padding: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Rezerwacje — Sauna, Jacuzzi & Balia</h1>
+    <p>Rezerwacja całej strefy na dany slot czasowy</p>
+  </div>
+  <div class="date-row">
+    <label>Data:</label>
+    <input type="date" id="datePicker" />
+  </div>
+  <div class="zones" id="zonesContainer">
+    <div class="empty-state">Wybierz datę, aby zobaczyć dostępność</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="bookingModal">
+  <div class="modal">
+    <div class="modal-title" id="bm-title">Nowa rezerwacja</div>
+    <div class="modal-sub" id="bm-sub"></div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="sd1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="sd2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="sd3">3</div>
+    </div>
+
+    <div class="step-panel active" id="step1">
+      <label class="field-label">Gość — imię lub nr domku/pokoju</label>
+      <input type="text" id="inp-guest" placeholder="np. Jan Kowalski / Domek 3" />
+      <div class="error-msg" id="err1">Uzupełnij to pole</div>
+      <label class="field-label">Które urządzenie?</label>
+      <div class="fac-checkboxes" id="fac-checkboxes"></div>
+      <div class="error-msg" id="err-fac">Wybierz co najmniej jedno urządzenie</div>
+    </div>
+
+    <div class="step-panel" id="step2">
+      <label class="field-label">Pracownik wprowadzający rezerwację</label>
+      <input type="text" id="inp-worker" placeholder="np. Anna K." />
+      <div class="error-msg" id="err2">Uzupełnij to pole</div>
+    </div>
+
+    <div class="step-panel" id="step3">
+      <label class="field-label">Rozliczenie</label>
+      <div class="payment-opts">
+        <label class="pay-opt-row">
+          <input type="radio" name="paytype" value="included" id="pay-included" checked onchange="onPayTypeChange()" />
+          Usługa w cenie pobytu
+        </label>
+        <label class="pay-opt-row">
+          <input type="radio" name="paytype" value="amount" id="pay-amount" onchange="onPayTypeChange()" />
+          Opłata dodatkowa
+        </label>
+      </div>
+      <div class="amount-block" id="amount-block" style="display:none;">
+        <label class="field-label">Kwota (zł)</label>
+        <input type="number" id="inp-amount" placeholder="np. 150" min="0" step="1" />
+        <label class="field-label" style="margin-top:14px;">Status płatności</label>
+        <div class="pay-status-group">
+          <button class="pay-status-btn" id="ps-paid" onclick="selectPayStatus('paid')">Zapłacono</button>
+          <button class="pay-status-btn" id="ps-unpaid" onclick="selectPayStatus('unpaid')">Nie zapłacono</button>
+        </div>
+        <div class="error-msg" id="err-status">Wybierz status płatności</div>
+      </div>
+      <label class="field-label" style="margin-top:14px;">Uwagi (opcjonalnie)</label>
+      <textarea id="inp-notes" placeholder="Dodatkowe informacje..."></textarea>
+    </div>
+
+    <div class="modal-nav">
+      <button class="btn-secondary" id="btn-back" onclick="stepBack()" style="display:none">← Wstecz</button>
+      <button class="btn-secondary" onclick="closeBookingModal()">Anuluj</button>
+      <button class="btn-primary" id="btn-next" onclick="stepNext()">Dalej →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="detailModal">
+  <div class="detail-modal">
+    <div class="modal-title" id="dm-title"></div>
+    <div class="modal-sub" id="dm-sub"></div>
+    <div id="dm-rows"></div>
+    <div class="dm-footer">
+      <button class="btn-danger-sm" onclick="deleteFromDetail()">Usuń rezerwację</button>
+      <div class="dm-pay-group">
+        <button class="dm-pay-btn" id="dm-btn-included" onclick="setDetailPay('included')">W cenie</button>
+        <button class="dm-pay-btn" id="dm-btn-paid" onclick="setDetailPay('paid')">Zapłacono</button>
+        <button class="dm-pay-btn" id="dm-btn-unpaid" onclick="setDetailPay('unpaid')">Nie zapłacono</button>
+        <button class="btn-secondary" onclick="closeDetailModal()">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ZONES = [
+    { id:'magurka', name:'Strefa Magurka', sub:'przy domku 6', facilities:['Jacuzzi','Balia','Sauna'] },
+    { id:'rogacz',  name:'Strefa Rogacz',  sub:'przy basenie', facilities:['Balia','Sauna'] },
+    { id:'czupel',  name:'Strefa Czupel',  sub:'przy basenie', facilities:['Jacuzzi'] }
+  ];
+  const SLOTS = ['10:00–11:20','11:30–12:50','13:00–14:20','14:20–15:50','16:00–17:20','17:30–18:50','19:00–20:20','20:30–21:50'];
+  const FAC_CLASS = { Sauna:'b-sauna', Jacuzzi:'b-jacuzzi', Balia:'b-balia' };
+
+  let reservations = {};
+  let selectedDate = '';
+  let currentStep = 1;
+  let pendingZone = null;
+  let pendingSlot = null;
+  let selectedPayStatus = null;
+  let detailKey = null;
+
+  const STORAGE_KEY = 'sauna_reservations_v1';
+
+  function loadRes() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); if(raw) reservations = JSON.parse(raw); } catch(e) {}
+  }
+  function saveRes() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations)); } catch(e) {}
+  }
+
+  function resKey(date, zone, slot) { return `${date}|${zone}|${slot}`; }
+  function fmtDate(d) { if(!d) return ''; const [y,m,dd]=d.split('-'); return `${dd}.${m}.${y}`; }
+
+  function payPill(res) {
+    if(res.payType==='included') return '<span class="pay-pill pill-included">W cenie pobytu</span>';
+    if(res.payStatus==='paid') return `<span class="pay-pill pill-paid">✓ Zapłacono${res.amount ? ': '+res.amount+' zł' : ''}</span>`;
+    return `<span class="pay-pill pill-unpaid">✗ Nie zapłacono${res.amount ? ' · '+res.amount+' zł' : ''}</span>`;
+  }
+
+  function render() {
+    const c = document.getElementById('zonesContainer');
+    c.innerHTML = '';
+    if(!selectedDate) { c.innerHTML = '<div class="empty-state">Wybierz datę, aby zobaczyć dostępność</div>'; return; }
+    ZONES.forEach(zone => {
+      const card = document.createElement('div');
+      card.className = 'zone-card';
+      const badgesHtml = zone.facilities.map(f=>`<span class="badge ${FAC_CLASS[f]}">${f}</span>`).join('');
+      let html = `<div class="zone-head">
+        <div class="zone-head-name">${zone.name}</div>
+        <div class="zone-head-sub">${zone.sub}</div>
+        <div class="zone-badges">${badgesHtml}</div>
+      </div>`;
+      SLOTS.forEach(slot => {
+        const key = resKey(selectedDate, zone.id, slot);
+        const res = reservations[key];
+        if(res) {
+          const chips = res.facilities.map(f=>`<span class="chip badge ${FAC_CLASS[f]}">${f}</span>`).join('');
+          html += `<div class="slot-row slot-blocked">
+            <span class="slot-time">${slot}</span>
+            <div class="slot-info">
+              <span class="slot-guest">${res.guest}</span>
+              <div class="facility-chips">${chips}</div>
+              <span class="slot-worker">Wpisał(a): ${res.worker}</span>
+              ${payPill(res)}
+            </div>
+            <button class="btn-taken" onclick="openDetail('${key}')">Szczegóły</button>
+          </div>`;
+        } else {
+          html += `<div class="slot-row">
+            <span class="slot-time">${slot}</span>
+            <div class="slot-info"><span class="slot-free">wolny</span></div>
+            <button class="btn-book" onclick="openBooking('${zone.id}','${zone.name}','${slot}','${zone.facilities.join(',')}')">Zarezerwuj</button>
+          </div>`;
+        }
+      });
+      card.innerHTML = html;
+      c.appendChild(card);
+    });
+  }
+
+  function onPayTypeChange() {
+    const isAmount = document.getElementById('pay-amount').checked;
+    document.getElementById('amount-block').style.display = isAmount ? 'block' : 'none';
+    if(!isAmount) { selectedPayStatus = null; resetPayStatusBtns(); }
+  }
+
+  function selectPayStatus(val) {
+    selectedPayStatus = val;
+    document.getElementById('ps-paid').className = 'pay-status-btn' + (val==='paid' ? ' sel-paid' : '');
+    document.getElementById('ps-unpaid').className = 'pay-status-btn' + (val==='unpaid' ? ' sel-unpaid' : '');
+    document.getElementById('err-status').style.display = 'none';
+  }
+
+  function resetPayStatusBtns() {
+    document.getElementById('ps-paid').className = 'pay-status-btn';
+    document.getElementById('ps-unpaid').className = 'pay-status-btn';
+  }
+
+  function updateChipStyle(cb) { cb.parentElement.classList.toggle('selected', cb.checked); }
+
+  function openBooking(zoneId, zoneName, slot, facsStr) {
+    pendingZone = { id: zoneId, name: zoneName, facilities: facsStr.split(',') };
+    pendingSlot = slot;
+    currentStep = 1; selectedPayStatus = null;
+    document.getElementById('bm-title').textContent = `Rezerwacja — ${zoneName}`;
+    document.getElementById('bm-sub').textContent = `${slot} · ${fmtDate(selectedDate)}`;
+    ['inp-guest','inp-worker','inp-amount','inp-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pay-included').checked = true;
+    document.getElementById('amount-block').style.display = 'none';
+    resetPayStatusBtns();
+    document.querySelectorAll('.error-msg').forEach(e=>e.style.display='none');
+    const cbContainer = document.getElementById('fac-checkboxes');
+    cbContainer.innerHTML = '';
+    pendingZone.facilities.forEach(f => {
+      const lbl = document.createElement('label');
+      lbl.className = 'fac-cb';
+      lbl.innerHTML = `<input type="checkbox" value="${f}" onchange="updateChipStyle(this)"> ${f}`;
+      cbContainer.appendChild(lbl);
+    });
+    updateStepUI();
+    document.getElementById('bookingModal').classList.add('open');
+    setTimeout(()=>document.getElementById('inp-guest').focus(), 100);
+  }
+
+  function closeBookingModal() { document.getElementById('bookingModal').classList.remove('open'); }
+
+  function updateStepUI() {
+    [1,2,3].forEach(i => {
+      document.getElementById('step'+i).classList.toggle('active', i===currentStep);
+      const dot = document.getElementById('sd'+i);
+      dot.classList.remove('active','done');
+      if(i===currentStep) dot.classList.add('active');
+      else if(i<currentStep) dot.classList.add('done');
+    });
+    document.getElementById('btn-back').style.display = currentStep > 1 ? 'block' : 'none';
+    document.getElementById('btn-next').textContent = currentStep === 3 ? 'Zatwierdź ✓' : 'Dalej →';
+  }
+
+  function stepBack() { if(currentStep>1) { currentStep--; updateStepUI(); } }
+
+  function stepNext() {
+    if(currentStep===1) {
+      const guest = document.getElementById('inp-guest').value.trim();
+      const checked = [...document.querySelectorAll('#fac-checkboxes input:checked')];
+      let ok = true;
+      if(!guest) { document.getElementById('err1').style.display='block'; ok=false; } else document.getElementById('err1').style.display='none';
+      if(!checked.length) { document.getElementById('err-fac').style.display='block'; ok=false; } else document.getElementById('err-fac').style.display='none';
+      if(!ok) return;
+      currentStep=2; updateStepUI();
+      setTimeout(()=>document.getElementById('inp-worker').focus(),100);
+    } else if(currentStep===2) {
+      const worker = document.getElementById('inp-worker').value.trim();
+      if(!worker) { document.getElementById('err2').style.display='block'; return; }
+      document.getElementById('err2').style.display='none';
+      currentStep=3; updateStepUI();
+    } else {
+      const payType = document.querySelector('input[name=paytype]:checked').value;
+      if(payType==='amount' && !selectedPayStatus) { document.getElementById('err-status').style.display='block'; return; }
+      const key = resKey(selectedDate, pendingZone.id, pendingSlot);
+      reservations[key] = {
+        guest: document.getElementById('inp-guest').value.trim(),
+        worker: document.getElementById('inp-worker').value.trim(),
+        payType,
+        amount: payType==='amount' ? document.getElementById('inp-amount').value : '',
+        payStatus: payType==='amount' ? selectedPayStatus : null,
+        notes: document.getElementById('inp-notes').value.trim(),
+        facilities: [...document.querySelectorAll('#fac-checkboxes input:checked')].map(c=>c.value)
+      };
+      saveRes();
+      closeBookingModal();
+      render();
+    }
+  }
+
+  function openDetail(key) {
+    detailKey = key;
+    const res = reservations[key];
+    if(!res) return;
+    const [date, zone, slot] = key.split('|');
+    const zoneObj = ZONES.find(z=>z.id===zone);
+    document.getElementById('dm-title').textContent = zoneObj ? zoneObj.name : zone;
+    document.getElementById('dm-sub').textContent = `${slot} · ${fmtDate(date)}`;
+    renderDetailRows(res);
+    updateDetailPayBtns(res);
+    document.getElementById('detailModal').classList.add('open');
+  }
+
+  function renderDetailRows(res) {
+    const payLabel = res.payType==='included' ? 'W cenie pobytu' : (res.amount ? res.amount+' zł' : 'Opłata dodatkowa');
+    const rows = [
+      ['Gość', res.guest],
+      ['Urządzenia', res.facilities.join(', ')],
+      ['Pracownik', res.worker],
+      ['Rozliczenie', payLabel],
+      ['Status płatności', payPill(res)],
+      res.notes ? ['Uwagi', res.notes] : null
+    ].filter(Boolean);
+    document.getElementById('dm-rows').innerHTML = rows.map(([k,v])=>
+      `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
+    ).join('');
+  }
+
+  function updateDetailPayBtns(res) {
+    const cur = res.payType==='included' ? 'included' : res.payStatus;
+    document.getElementById('dm-btn-included').className = 'dm-pay-btn' + (cur==='included' ? ' active-included' : '');
+    document.getElementById('dm-btn-paid').className = 'dm-pay-btn' + (cur==='paid' ? ' active-paid' : '');
+    document.getElementById('dm-btn-unpaid').className = 'dm-pay-btn' + (cur==='unpaid' ? ' active-unpaid' : '');
+  }
+
+  function setDetailPay(val) {
+    const res = reservations[detailKey];
+    if(!res) return;
+    if(val==='included') { res.payType='included'; res.payStatus=null; res.amount=''; }
+    else { res.payType='amount'; res.payStatus=val; }
+    saveRes();
+    renderDetailRows(res);
+    updateDetailPayBtns(res);
+    render();
+  }
+
+  function closeDetailModal() { document.getElementById('detailModal').classList.remove('open'); }
+
+  function deleteFromDetail() {
+    if(!confirm('Usunąć tę rezerwację?')) return;
+    delete reservations[detailKey];
+    saveRes();
+    closeDetailModal();
+    render();
+  }
+
+  document.getElementById('bookingModal').addEventListener('click', e => { if(e.target===document.getElementById('bookingModal')) closeBookingModal(); });
+  document.getElementById('detailModal').addEventListener('click', e => { if(e.target===document.getElementById('detailModal')) closeDetailModal(); });
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('datePicker').value = today;
+  selectedDate = today;
+  document.getElementById('datePicker').addEventListener('change', e => { selectedDate = e.target.value; render(); });
+
+  loadRes();
+  render();
+</script>
+</body>
+</html>
