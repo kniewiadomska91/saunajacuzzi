@@ -282,14 +282,30 @@ textarea{resize:vertical;min-height:64px;}
 <!-- ===== GUEST CANCEL MODAL (PIN) ===== -->
 <div class="modal-bg" id="guestCancelModal">
   <div class="modal modal-sm">
-    <div class="modal-title">Anuluj rezerwację</div>
-    <div class="modal-sub" id="gcm-sub">Wpisz kod PIN, który otrzymałeś przy rezerwacji.</div>
-    <label class="field-label">Kod PIN (4 cyfry)</label>
-    <input type="number" id="gcm-pin" placeholder="1234" min="1000" max="9999" style="font-size:20px;letter-spacing:4px;text-align:center;"/>
-    <div class="error-msg" id="gcm-err">Nieprawidłowy kod PIN</div>
-    <div class="modal-nav">
-      <button class="btn-secondary" onclick="closeGuestCancelModal()">Zamknij</button>
-      <button class="btn-danger" onclick="confirmGuestCancel()">Anuluj rezerwację</button>
+    <!-- PIN form -->
+    <div id="gcm-form">
+      <div class="modal-title">Anuluj rezerwację</div>
+      <div class="modal-sub" id="gcm-sub">Wpisz 4-cyfrowy kod PIN, który otrzymałeś przy rezerwacji.</div>
+      <label class="field-label">Kod PIN</label>
+      <input type="number" id="gcm-pin" placeholder="1234" min="1000" max="9999"
+        style="font-size:22px;letter-spacing:6px;text-align:center;"
+        onkeydown="if(event.key==='Enter')confirmGuestCancel()"/>
+      <div class="error-msg" id="gcm-err">Nieprawidłowy kod PIN — spróbuj ponownie</div>
+      <div class="modal-nav">
+        <button class="btn-secondary" onclick="closeGuestCancelModal()">Zamknij</button>
+        <button class="btn-danger" onclick="confirmGuestCancel()">Anuluj rezerwację</button>
+      </div>
+    </div>
+    <!-- Success -->
+    <div id="gcm-success" style="display:none;">
+      <div class="success-screen">
+        <div class="success-icon">🗑️</div>
+        <div class="success-title">Rezerwacja anulowana</div>
+        <div class="success-sub" style="margin-top:6px;">Slot jest teraz wolny i dostępny dla innych gości.</div>
+      </div>
+      <div class="modal-nav" style="justify-content:center;margin-top:1.25rem;">
+        <button class="btn-primary" onclick="closeGuestCancelModal()">Zamknij</button>
+      </div>
     </div>
   </div>
 </div>
@@ -494,10 +510,13 @@ function render(){
           const chips=res.facilities.map(f=>'<span class="chip badge '+FAC_CLASS[f]+'">'+f+'</span>').join('');
           html+='<div class="slot-row slot-blocked"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-guest">'+res.guest+'</span><div class="facility-chips">'+chips+'</div><span class="slot-sub">'+sourcePill(res)+(res.worker?' · Wpisał(a): '+res.worker:'')+'</span>'+payPill(res)+'</div><button class="btn-taken" data-key="'+key+'">Szczegóły</button></div>';
         } else {
-          // guest view: slot is taken, show anonymous
-          html+='<div class="slot-row slot-blocked-guest"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-taken-label">Zajęty</span></div>';
-          // if this reservation belongs to the current guest session, show cancel
-          html+='<span style="font-size:11px;color:var(--text-hint);">—</span></div>';
+          // guest view: slot is taken
+          if(res.source === 'guest'){
+            html+='<div class="slot-row slot-blocked-guest"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-taken-label">Zajęty</span><span style="font-size:11px;color:var(--text-hint);">Masz tę rezerwację? Anuluj kodem PIN.</span></div><button class="btn-cancel-guest" data-key="'+key+'">Anuluj PIN</button></div>';
+          } else {
+            // admin-created — guest cannot cancel, but show info
+            html+='<div class="slot-row slot-blocked-guest"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-taken-label">Zajęty</span><span style="font-size:11px;color:var(--text-hint);">Rezerwacja przez recepcję</span></div></div>';
+          }
         }
       } else {
         if(isAdmin){
@@ -513,6 +532,7 @@ function render(){
       card.querySelectorAll('.btn-taken').forEach(b=>b.addEventListener('click',()=>openDetail(b.dataset.key)));
     } else {
       card.querySelectorAll('.guest-book-btn').forEach(b=>b.addEventListener('click',()=>openGuestModal()));
+      card.querySelectorAll('.btn-cancel-guest').forEach(b=>b.addEventListener('click',()=>window.openGuestCancel(b.dataset.key)));
     }
     c.appendChild(card);
   });
@@ -683,8 +703,21 @@ window.gStepNext = async function(){
 // ─────────────────── GUEST CANCEL ───────────────────
 window.openGuestCancel = function(key){
   cancelTargetKey=key;
+  const res=reservations[key];
+  // show reservation details in subtitle
+  let sub='Wpisz 4-cyfrowy kod PIN, który otrzymałeś przy rezerwacji.';
+  if(res){
+    const parts=key.split('__');
+    const zoneId=parts[1];
+    const zoneObj=ZONES.find(z=>z.id===zoneId);
+    const slot=parts.slice(2).join('__').replace(/_/g,':').replace(/(\d\d):(\d\d)_(\d\d):(\d\d)/,'$1:$2–$3:$4');
+    sub='<b>'+(zoneObj?zoneObj.name:zoneId)+'</b> · '+slot+' · '+fmtDate(selectedDate)+'<br><span style="color:var(--text-hint)">Wpisz kod PIN aby anulować.</span>';
+  }
+  document.getElementById('gcm-sub').innerHTML=sub;
   document.getElementById('gcm-err').style.display='none';
   document.getElementById('gcm-pin').value='';
+  document.getElementById('gcm-form').style.display='block';
+  document.getElementById('gcm-success').style.display='none';
   document.getElementById('guestCancelModal').classList.add('open');
   setTimeout(()=>document.getElementById('gcm-pin').focus(),100);
 };
@@ -695,10 +728,14 @@ window.confirmGuestCancel = async function(){
   const pin=document.getElementById('gcm-pin').value.trim();
   const res=reservations[cancelTargetKey];
   if(!res||String(res.pin)!==String(pin)){
-    document.getElementById('gcm-err').style.display='block'; return;
+    document.getElementById('gcm-err').style.display='block';
+    document.getElementById('gcm-pin').select();
+    return;
   }
   await removeRes(cancelTargetKey);
-  window.closeGuestCancelModal();
+  // show success screen
+  document.getElementById('gcm-form').style.display='none';
+  document.getElementById('gcm-success').style.display='block';
 };
 
 // ─────────────────── ADMIN BOOKING ───────────────────
