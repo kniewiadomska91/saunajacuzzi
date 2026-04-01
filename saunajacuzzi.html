@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rezerwacje — Sauna, Jacuzzi &amp; Balia</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f5f3ef;--surface:#fff;--surface2:#f0ede8;
+  --border:rgba(0,0,0,0.1);--border-strong:rgba(0,0,0,0.18);
+  --text:#1a1a18;--text-muted:#6b6b67;--text-hint:#a0a09a;
+  --blue:#1a6bbd;--blue-bg:#e8f1fb;--blue-border:#aac8ef;
+  --green:#2d7a3a;--green-bg:#e6f4e8;--green-border:#9ecfa6;
+  --red:#b03030;--red-bg:#fceaea;--red-border:#e8a8a8;
+  --amber:#8a5a00;--amber-bg:#fef3dc;--amber-border:#e8c87a;
+  --teal:#1a6e5a;--teal-bg:#e4f4f0;--teal-border:#8ecfc4;
+  --purple:#5b2d8a;--purple-bg:#f0e8fb;--purple-border:#c9a8ef;
+  --radius:10px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 12px rgba(0,0,0,0.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:1.5rem 1rem;}
+.app{max-width:780px;margin:0 auto;}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;}
+.header-title h1{font-size:20px;font-weight:600;letter-spacing:-0.3px;}
+.header-title p{font-size:13px;color:var(--text-muted);margin-top:2px;}
+.mode-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;cursor:pointer;border:none;}
+.mode-badge.guest{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.mode-badge.admin{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);}
+
+/* STATUS */
+.status-bar{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:1rem;font-size:12px;color:var(--text-muted);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);}
+.status-dot.connected{background:var(--green);}
+
+/* DATE */
+.date-row{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:1.5rem;}
+.date-row label{font-size:13px;color:var(--text-muted);}
+.date-row input[type=date]{font-family:'DM Sans',sans-serif;font-size:14px;padding:7px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);cursor:pointer;}
+
+/* GUEST INFO BOX */
+.guest-info-box{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius);padding:12px 16px;margin-bottom:1.25rem;font-size:13px;color:var(--blue);line-height:1.6;}
+.guest-info-box b{font-weight:600;}
+
+/* ZONES */
+.zones{display:flex;flex-direction:column;gap:14px;}
+.zone-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.zone-head{padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.zone-head-name{font-size:14px;font-weight:600;}
+.zone-head-sub{font-size:12px;color:var(--text-muted);margin-top:1px;}
+.zone-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;}
+.b-sauna{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+.b-jacuzzi{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.b-balia{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border);}
+
+.slot-row{display:grid;grid-template-columns:105px 1fr auto;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:10px;}
+.slot-row:last-child{border-bottom:none;}
+.slot-blocked{background:#fafaf8;}
+.slot-blocked-guest{background:#fff8f8;}
+.slot-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);white-space:nowrap;}
+.slot-info{display:flex;flex-direction:column;gap:2px;}
+.slot-free{font-size:13px;color:var(--text-hint);font-style:italic;}
+.slot-guest{font-size:13px;font-weight:600;}
+.slot-sub{font-size:11px;color:var(--text-muted);}
+.slot-taken-label{font-size:13px;color:var(--red);font-style:italic;}
+.facility-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;}
+.chip{font-size:10px;font-weight:500;padding:1px 7px;border-radius:20px;}
+.pay-pill{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;margin-top:3px;display:inline-block;}
+.pill-included{background:var(--blue-bg);color:var(--blue);}
+.pill-paid{background:var(--green-bg);color:var(--green);}
+.pill-unpaid{background:var(--red-bg);color:var(--red);}
+.pill-pending{background:var(--amber-bg);color:var(--amber);}
+.source-pill{font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;margin-top:2px;display:inline-block;}
+.src-guest{background:var(--blue-bg);color:var(--blue);}
+.src-admin{background:var(--purple-bg);color:var(--purple);}
+
+.btn-book{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 13px;border-radius:var(--radius-sm);border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-book:hover{background:#d4e6f8;}
+.btn-book:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-taken{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 13px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-taken:hover{background:var(--surface2);}
+.btn-cancel-guest{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 13px;border-radius:var(--radius-sm);border:1px solid var(--red-border);background:transparent;color:var(--red);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-cancel-guest:hover{background:var(--red-bg);}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:14px;}
+
+/* MODAL BASE */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.48);z-index:100;align-items:flex-start;justify-content:center;padding:5vh 1rem 2rem;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.18);padding:1.5rem;width:420px;max-width:100%;max-height:90vh;overflow-y:auto;}
+.modal-sm{width:360px;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:3px;}
+.modal-sub{font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;}
+
+/* STEPS */
+.step-indicator{display:flex;align-items:center;gap:6px;margin-bottom:1.25rem;}
+.step-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;border:1px solid var(--border-strong);color:var(--text-muted);flex-shrink:0;transition:all 0.2s;}
+.step-dot.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);}
+.step-dot.done{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+.step-line{flex:1;height:1px;background:var(--border);}
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+/* FORM ELEMENTS */
+.field-label{font-size:13px;font-weight:500;color:var(--text-muted);margin-bottom:6px;display:block;margin-top:14px;}
+.field-label:first-child{margin-top:0;}
+.field-hint{font-size:11px;color:var(--text-hint);margin-top:4px;}
+input[type=text],input[type=number],input[type=password],select,textarea{font-family:'DM Sans',sans-serif;font-size:14px;width:100%;padding:8px 11px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;transition:border-color 0.15s;}
+input[type=text]:focus,input[type=number]:focus,input[type=password]:focus,select:focus,textarea:focus{border-color:var(--blue);}
+textarea{resize:vertical;min-height:64px;}
+.fac-checkboxes{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.fac-cb{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;padding:6px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--text);transition:all 0.15s;user-select:none;}
+.fac-cb input{display:none;}
+.fac-cb.selected{border-color:var(--blue-border);background:var(--blue-bg);color:var(--blue);}
+.payment-opts{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+.pay-opt-row{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer;color:var(--text);padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all 0.15s;}
+.pay-opt-row input[type=radio]{accent-color:var(--blue);}
+.pay-status-group{display:flex;gap:8px;margin-top:6px;}
+.pay-status-btn{font-family:'DM Sans',sans-serif;flex:1;padding:9px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:transparent;font-size:13px;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all 0.15s;}
+.pay-status-btn.sel-paid{border-color:var(--green-border);background:var(--green-bg);color:var(--green);}
+.pay-status-btn.sel-unpaid{border-color:var(--red-border);background:var(--red-bg);color:var(--red);}
+.error-msg{font-size:12px;color:var(--red);margin-top:5px;display:none;}
+
+/* PIN DISPLAY */
+.pin-box{background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);padding:16px;text-align:center;margin:1rem 0;}
+.pin-box .pin-label{font-size:12px;color:var(--green);margin-bottom:6px;}
+.pin-box .pin-number{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--green);letter-spacing:6px;}
+.pin-box .pin-note{font-size:11px;color:var(--text-muted);margin-top:8px;}
+
+/* ZONE SELECTOR (guest) */
+.zone-selector{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.zone-opt{padding:10px 14px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;}
+.zone-opt:hover{background:var(--surface2);}
+.zone-opt.selected{border-color:var(--blue-border);background:var(--blue-bg);}
+.zone-opt-name{font-size:13px;font-weight:600;color:var(--text);}
+.zone-opt.selected .zone-opt-name{color:var(--blue);}
+.zone-opt-sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.zone-opt-badges{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+
+/* SLOT SELECTOR (guest) */
+.slot-selector{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.slot-opt{padding:9px 14px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between;}
+.slot-opt:hover:not(.slot-opt-taken){background:var(--surface2);}
+.slot-opt.selected{border-color:var(--blue-border);background:var(--blue-bg);}
+.slot-opt.slot-opt-taken{opacity:0.45;cursor:not-allowed;background:var(--surface2);}
+.slot-opt-time{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);}
+.slot-opt.selected .slot-opt-time{color:var(--blue);}
+.slot-opt-status{font-size:11px;color:var(--text-hint);}
+.slot-opt-taken .slot-opt-status{color:var(--red);}
+
+/* MODAL BUTTONS */
+.modal-nav{display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end;}
+.btn-primary{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:8px 20px;border-radius:var(--radius-sm);background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);cursor:pointer;transition:all 0.15s;}
+.btn-primary:hover{background:#d4e6f8;}
+.btn-secondary{font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 14px;border-radius:var(--radius-sm);background:transparent;border:1px solid var(--border-strong);color:var(--text-muted);cursor:pointer;transition:all 0.15s;}
+.btn-secondary:hover{background:var(--surface2);}
+.btn-danger{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:8px 16px;border-radius:var(--radius-sm);background:transparent;border:1px solid var(--red-border);color:var(--red);cursor:pointer;transition:all 0.15s;}
+.btn-danger:hover{background:var(--red-bg);}
+.btn-danger-sm{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid var(--red-border);background:transparent;color:var(--red);cursor:pointer;transition:all 0.15s;}
+.btn-danger-sm:hover{background:var(--red-bg);}
+
+/* DETAIL MODAL */
+.detail-modal{width:400px;}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;gap:12px;}
+.detail-row:last-of-type{border-bottom:none;}
+.detail-key{color:var(--text-muted);white-space:nowrap;}
+.detail-val{font-weight:500;text-align:right;}
+.dm-footer{display:flex;gap:8px;margin-top:1rem;justify-content:space-between;align-items:center;flex-wrap:wrap;}
+.dm-pay-group{display:flex;gap:6px;flex-wrap:wrap;}
+.dm-pay-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:5px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s;}
+.dm-pay-btn:hover{background:var(--surface2);}
+.dm-pay-btn.active-included{border-color:var(--blue-border);background:var(--blue-bg);color:var(--blue);}
+.dm-pay-btn.active-paid{border-color:var(--green-border);background:var(--green-bg);color:var(--green);}
+.dm-pay-btn.active-unpaid{border-color:var(--red-border);background:var(--red-bg);color:var(--red);}
+
+/* SUCCESS SCREEN */
+.success-screen{text-align:center;padding:1rem 0;}
+.success-icon{font-size:40px;margin-bottom:12px;}
+.success-title{font-size:18px;font-weight:600;margin-bottom:6px;}
+.success-sub{font-size:13px;color:var(--text-muted);}
+
+@media(max-width:520px){
+  .slot-row{grid-template-columns:85px 1fr auto;}
+  .modal{padding:1.1rem;}
+  .header{flex-direction:column;align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-title">
+      <h1>Rezerwacje — Sauna, Jacuzzi &amp; Balia</h1>
+      <p id="modeLabel">Widok gościa</p>
+    </div>
+    <button class="mode-badge guest" id="modeBadge" onclick="handleModeSwitch()">Panel admina →</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Łączenie...</span>
+  </div>
+
+  <!-- GUEST INFO -->
+  <div class="guest-info-box" id="guestInfoBox">
+    <b>Jak zarezerwować?</b> Wybierz datę, strefę i slot — każdy gość może zarezerwować jedną strefę dziennie.
+    Po rezerwacji otrzymasz <b>kod PIN</b> do ewentualnego anulowania.
+  </div>
+
+  <div class="date-row">
+    <label>Data:</label>
+    <input type="date" id="datePicker"/>
+  </div>
+  <div class="zones" id="zonesContainer">
+    <div class="empty-state">Wybierz datę, aby zobaczyć dostępność</div>
+  </div>
+</div>
+
+<!-- ===== GUEST BOOKING MODAL ===== -->
+<div class="modal-bg" id="guestBookingModal">
+  <div class="modal">
+    <div class="modal-title" id="gbm-title">Zarezerwuj strefę</div>
+    <div class="modal-sub" id="gbm-sub"></div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="gsd1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="gsd2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="gsd3">3</div>
+    </div>
+
+    <!-- Step 1: guest name -->
+    <div class="step-panel active" id="gstep1">
+      <label class="field-label">Twoje imię lub numer domku/pokoju</label>
+      <input type="text" id="g-inp-guest" placeholder="np. Anna / Domek 5"/>
+      <div class="error-msg" id="g-err1">Uzupełnij to pole</div>
+    </div>
+
+    <!-- Step 2: choose zone + slot -->
+    <div class="step-panel" id="gstep2">
+      <label class="field-label">Wybierz strefę</label>
+      <div class="zone-selector" id="g-zone-selector"></div>
+      <div class="error-msg" id="g-err-zone">Wybierz strefę</div>
+      <div id="g-slot-section" style="display:none;">
+        <label class="field-label" style="margin-top:14px;">Wybierz godzinę</label>
+        <div class="slot-selector" id="g-slot-selector"></div>
+        <div class="error-msg" id="g-err-slot">Wybierz godzinę</div>
+      </div>
+    </div>
+
+    <!-- Step 3: confirm + PIN -->
+    <div class="step-panel" id="gstep3">
+      <div id="gstep3-confirm">
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Sprawdź szczegóły i potwierdź rezerwację:</p>
+        <div id="g-summary" style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;line-height:2;"></div>
+      </div>
+      <div id="gstep3-done" style="display:none;">
+        <div class="success-screen">
+          <div class="success-icon">✅</div>
+          <div class="success-title">Rezerwacja potwierdzona!</div>
+          <div class="success-sub">Zapisz swój kod PIN — będziesz go potrzebować do anulowania.</div>
+          <div class="pin-box">
+            <div class="pin-label">Twój kod PIN</div>
+            <div class="pin-number" id="g-pin-display"></div>
+            <div class="pin-note">Zachowaj ten kod! Bez niego nie możesz anulować rezerwacji.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-nav" id="gbm-nav">
+      <button class="btn-secondary" id="gbm-back" onclick="gStepBack()" style="display:none">← Wstecz</button>
+      <button class="btn-secondary" onclick="closeGuestModal()">Anuluj</button>
+      <button class="btn-primary" id="gbm-next" onclick="gStepNext()">Dalej →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GUEST CANCEL MODAL (PIN) ===== -->
+<div class="modal-bg" id="guestCancelModal">
+  <div class="modal modal-sm">
+    <!-- PIN form -->
+    <div id="gcm-form">
+      <div class="modal-title">Anuluj rezerwację</div>
+      <div class="modal-sub" id="gcm-sub">Wpisz 4-cyfrowy kod PIN, który otrzymałeś przy rezerwacji.</div>
+      <label class="field-label">Kod PIN</label>
+      <input type="number" id="gcm-pin" placeholder="1234" min="1000" max="9999"
+        style="font-size:22px;letter-spacing:6px;text-align:center;"
+        onkeydown="if(event.key==='Enter')confirmGuestCancel()"/>
+      <div class="error-msg" id="gcm-err">Nieprawidłowy kod PIN — spróbuj ponownie</div>
+      <div class="modal-nav">
+        <button class="btn-secondary" onclick="closeGuestCancelModal()">Zamknij</button>
+        <button class="btn-danger" onclick="confirmGuestCancel()">Anuluj rezerwację</button>
+      </div>
+    </div>
+    <!-- Success -->
+    <div id="gcm-success" style="display:none;">
+      <div class="success-screen">
+        <div class="success-icon">🗑️</div>
+        <div class="success-title">Rezerwacja anulowana</div>
+        <div class="success-sub" style="margin-top:6px;">Slot jest teraz wolny i dostępny dla innych gości.</div>
+      </div>
+      <div class="modal-nav" style="justify-content:center;margin-top:1.25rem;">
+        <button class="btn-primary" onclick="closeGuestCancelModal()">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN LOGIN MODAL ===== -->
+<div class="modal-bg" id="adminLoginModal">
+  <div class="modal modal-sm">
+    <div class="modal-title">Panel administratora</div>
+    <div class="modal-sub">Wpisz hasło dostępu</div>
+    <label class="field-label">Hasło</label>
+    <input type="password" id="adminPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"/>
+    <div class="error-msg" id="admin-err">Nieprawidłowe hasło</div>
+    <div class="modal-nav">
+      <button class="btn-secondary" onclick="closeAdminLogin()">Anuluj</button>
+      <button class="btn-primary" onclick="checkAdminPass()">Zaloguj</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN BOOKING MODAL ===== -->
+<div class="modal-bg" id="adminBookingModal">
+  <div class="modal">
+    <div class="modal-title" id="abm-title">Nowa rezerwacja</div>
+    <div class="modal-sub" id="abm-sub"></div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="asd1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="asd2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="asd3">3</div>
+    </div>
+    <div class="step-panel active" id="astep1">
+      <label class="field-label">Gość — imię lub nr domku/pokoju</label>
+      <input type="text" id="a-inp-guest" placeholder="np. Jan Kowalski / Domek 3"/>
+      <div class="error-msg" id="a-err1">Uzupełnij to pole</div>
+      <label class="field-label">Które urządzenie?</label>
+      <div class="fac-checkboxes" id="a-fac-checkboxes"></div>
+      <div class="error-msg" id="a-err-fac">Wybierz co najmniej jedno urządzenie</div>
+    </div>
+    <div class="step-panel" id="astep2">
+      <label class="field-label">Pracownik wprowadzający rezerwację</label>
+      <input type="text" id="a-inp-worker" placeholder="np. Anna K."/>
+      <div class="error-msg" id="a-err2">Uzupełnij to pole</div>
+    </div>
+    <div class="step-panel" id="astep3">
+      <label class="field-label">Rozliczenie</label>
+      <div class="payment-opts">
+        <label class="pay-opt-row">
+          <input type="radio" name="apaytype" value="included" id="a-pay-included" checked onchange="aOnPayTypeChange()"/>
+          Usługa w cenie pobytu
+        </label>
+        <label class="pay-opt-row">
+          <input type="radio" name="apaytype" value="amount" id="a-pay-amount" onchange="aOnPayTypeChange()"/>
+          Opłata dodatkowa
+        </label>
+      </div>
+      <div id="a-amount-block" style="display:none;">
+        <label class="field-label">Kwota (zł)</label>
+        <input type="number" id="a-inp-amount" placeholder="np. 150" min="0" step="1"/>
+        <label class="field-label" style="margin-top:14px;">Status płatności</label>
+        <div class="pay-status-group">
+          <button class="pay-status-btn" id="a-ps-paid" onclick="aSelectPayStatus('paid')">Zapłacono</button>
+          <button class="pay-status-btn" id="a-ps-unpaid" onclick="aSelectPayStatus('unpaid')">Nie zapłacono</button>
+        </div>
+        <div class="error-msg" id="a-err-status">Wybierz status płatności</div>
+      </div>
+      <label class="field-label" style="margin-top:14px;">Uwagi (opcjonalnie)</label>
+      <textarea id="a-inp-notes" placeholder="Dodatkowe informacje..."></textarea>
+    </div>
+    <div class="modal-nav">
+      <button class="btn-secondary" id="abm-back" onclick="aStepBack()" style="display:none">← Wstecz</button>
+      <button class="btn-secondary" onclick="closeAdminBookingModal()">Anuluj</button>
+      <button class="btn-primary" id="abm-next" onclick="aStepNext()">Dalej →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAIL MODAL (admin) ===== -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal detail-modal">
+    <div class="modal-title" id="dm-title"></div>
+    <div class="modal-sub" id="dm-sub"></div>
+    <div id="dm-rows"></div>
+    <div class="dm-footer">
+      <button class="btn-danger-sm" onclick="deleteFromDetail()">Usuń rezerwację</button>
+      <div class="dm-pay-group">
+        <button class="dm-pay-btn" id="dm-btn-included" onclick="setDetailPay('included')">W cenie</button>
+        <button class="dm-pay-btn" id="dm-btn-paid" onclick="setDetailPay('paid')">Zapłacono</button>
+        <button class="dm-pay-btn" id="dm-btn-unpaid" onclick="setDetailPay('unpaid')">Nie zapłacono</button>
+        <button class="btn-secondary" onclick="closeDetailModal()">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyApLbIOes4ippOU0L5_--MdrMPRT4bPoaE",
+  authDomain: "rezerwacje-6f601.firebaseapp.com",
+  databaseURL: "https://rezerwacje-6f601-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "rezerwacje-6f601",
+  storageBucket: "rezerwacje-6f601.firebasestorage.app",
+  messagingSenderId: "974577208202",
+  appId: "1:974577208202:web:3c127185bcc301b39f9673"
+};
+
+const ADMIN_PASSWORD = "admin2026";
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+const ZONES = [
+  { id:'magurka', name:'Strefa Magurka', sub:'przy domku 6', facilities:['Jacuzzi','Balia','Sauna'] },
+  { id:'rogacz',  name:'Strefa Rogacz',  sub:'przy basenie', facilities:['Balia','Sauna'] },
+  { id:'czupel',  name:'Strefa Czupel',  sub:'przy basenie', facilities:['Jacuzzi'] }
+];
+const SLOTS = ['10:00–11:20','11:30–12:50','13:00–14:20','14:20–15:50','16:00–17:20','17:30–18:50','19:00–20:20','20:30–21:50'];
+const FAC_CLASS = { Sauna:'b-sauna', Jacuzzi:'b-jacuzzi', Balia:'b-balia' };
+
+let reservations = {};
+let selectedDate = '';
+let isAdmin = false;
+let unsubFn = null;
+
+// ── STATE: guest booking ──
+let gStep = 1;
+let gSelectedZone = null;
+let gSelectedSlot = null;
+let gGeneratedPin = null;
+
+// ── STATE: admin booking ──
+let aStep = 1;
+let aPendingZone = null;
+let aPendingSlot = null;
+let aSelectedPayStatus = null;
+
+// ── STATE: detail ──
+let detailKey = null;
+let cancelTargetKey = null;
+
+// ─────────────────── HELPERS ───────────────────
+function safeKey(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
+function resKey(date,zone,slot){ return safeKey(date)+'__'+zone+'__'+safeKey(slot); }
+function fmtDate(d){ if(!d)return''; const[y,m,dd]=d.split('-'); return dd+'.'+m+'.'+y; }
+function genPin(){ return String(Math.floor(1000+Math.random()*9000)); }
+function dateKey(d){ return d.replace(/-/g,''); }
+
+function payPill(res){
+  if(!res.payType||res.payType==='pending') return '<span class="pay-pill pill-pending">Oczekuje</span>';
+  if(res.payType==='included') return '<span class="pay-pill pill-included">W cenie pobytu</span>';
+  if(res.payStatus==='paid') return '<span class="pay-pill pill-paid">✓ Zapłacono'+(res.amount?': '+res.amount+' zł':'')+'</span>';
+  return '<span class="pay-pill pill-unpaid">✗ Nie zapłacono'+(res.amount?' · '+res.amount+' zł':'')+'</span>';
+}
+
+function sourcePill(res){
+  if(res.source==='guest') return '<span class="source-pill src-guest">Gość</span>';
+  return '<span class="source-pill src-admin">Admin</span>';
+}
+
+// ─────────────────── FIREBASE ───────────────────
+onValue(ref(db,'.info/connected'), snap=>{
+  const dot=document.getElementById('statusDot');
+  const txt=document.getElementById('statusText');
+  if(snap.val()){ dot.className='status-dot connected'; txt.textContent='Połączono — dane na żywo'; }
+  else{ dot.className='status-dot'; txt.textContent='Łączenie z bazą...'; }
+});
+
+function subscribeToDate(date){
+  if(unsubFn) unsubFn();
+  if(!date) return;
+  unsubFn = onValue(ref(db,'reservations/'+dateKey(date)), snap=>{
+    reservations = snap.val()||{};
+    render();
+  });
+}
+
+async function saveRes(key, data){
+  await set(ref(db,'reservations/'+dateKey(selectedDate)+'/'+key), data);
+}
+async function removeRes(key){
+  await remove(ref(db,'reservations/'+dateKey(selectedDate)+'/'+key));
+}
+
+// ─────────────────── RENDER ───────────────────
+function render(){
+  const c=document.getElementById('zonesContainer');
+  c.innerHTML='';
+  if(!selectedDate){ c.innerHTML='<div class="empty-state">Wybierz datę, aby zobaczyć dostępność</div>'; return; }
+  ZONES.forEach(zone=>{
+    const card=document.createElement('div');
+    card.className='zone-card';
+    const badges=zone.facilities.map(f=>'<span class="badge '+FAC_CLASS[f]+'">'+f+'</span>').join('');
+    let html='<div class="zone-head"><div class="zone-head-name">'+zone.name+'</div><div class="zone-head-sub">'+zone.sub+'</div><div class="zone-badges">'+badges+'</div></div>';
+    SLOTS.forEach(slot=>{
+      const key=resKey(selectedDate,zone.id,slot);
+      const res=reservations[key];
+      if(res){
+        if(isAdmin){
+          const chips=res.facilities.map(f=>'<span class="chip badge '+FAC_CLASS[f]+'">'+f+'</span>').join('');
+          html+='<div class="slot-row slot-blocked"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-guest">'+res.guest+'</span><div class="facility-chips">'+chips+'</div><span class="slot-sub">'+sourcePill(res)+(res.worker?' · Wpisał(a): '+res.worker:'')+'</span>'+payPill(res)+'</div><button class="btn-taken" data-key="'+key+'">Szczegóły</button></div>';
+        } else {
+          // guest view: slot is taken
+          if(res.source === 'guest'){
+            html+='<div class="slot-row slot-blocked-guest"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-taken-label">Zajęty</span><span style="font-size:11px;color:var(--text-hint);">Masz tę rezerwację? Anuluj kodem PIN.</span></div><button class="btn-cancel-guest" data-key="'+key+'">Anuluj PIN</button></div>';
+          } else {
+            // admin-created — guest cannot cancel, but show info
+            html+='<div class="slot-row slot-blocked-guest"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-taken-label">Zajęty</span><span style="font-size:11px;color:var(--text-hint);">Rezerwacja przez recepcję</span></div></div>';
+          }
+        }
+      } else {
+        if(isAdmin){
+          html+='<div class="slot-row"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-free">wolny</span></div><button class="btn-book" data-zone="'+zone.id+'" data-name="'+zone.name+'" data-slot="'+slot+'" data-facs="'+zone.facilities.join(',')+'">Zarezerwuj</button></div>';
+        } else {
+          html+='<div class="slot-row"><span class="slot-time">'+slot+'</span><div class="slot-info"><span class="slot-free">wolny</span></div><button class="btn-book guest-book-btn" data-date="'+selectedDate+'">Zarezerwuj</button></div>';
+        }
+      }
+    });
+    card.innerHTML=html;
+    if(isAdmin){
+      card.querySelectorAll('.btn-book').forEach(b=>b.addEventListener('click',()=>openAdminBooking(b.dataset.zone,b.dataset.name,b.dataset.slot,b.dataset.facs)));
+      card.querySelectorAll('.btn-taken').forEach(b=>b.addEventListener('click',()=>openDetail(b.dataset.key)));
+    } else {
+      card.querySelectorAll('.guest-book-btn').forEach(b=>b.addEventListener('click',()=>openGuestModal()));
+      card.querySelectorAll('.btn-cancel-guest').forEach(b=>b.addEventListener('click',()=>window.openGuestCancel(b.dataset.key)));
+    }
+    c.appendChild(card);
+  });
+}
+
+// ─────────────────── MODE SWITCH ───────────────────
+window.handleModeSwitch = function(){
+  if(isAdmin){ isAdmin=false; updateModeUI(); render(); }
+  else{ document.getElementById('adminLoginModal').classList.add('open'); setTimeout(()=>document.getElementById('adminPassword').focus(),100); }
+};
+window.closeAdminLogin = function(){
+  document.getElementById('adminLoginModal').classList.remove('open');
+  document.getElementById('adminPassword').value='';
+  document.getElementById('admin-err').style.display='none';
+};
+window.checkAdminPass = function(){
+  const pw=document.getElementById('adminPassword').value;
+  if(pw===ADMIN_PASSWORD){
+    isAdmin=true; updateModeUI(); render();
+    window.closeAdminLogin();
+  } else {
+    document.getElementById('admin-err').style.display='block';
+  }
+};
+function updateModeUI(){
+  const badge=document.getElementById('modeBadge');
+  const label=document.getElementById('modeLabel');
+  const infoBox=document.getElementById('guestInfoBox');
+  if(isAdmin){
+    badge.textContent='Wyjdź z panelu admina'; badge.className='mode-badge admin';
+    label.textContent='Panel administratora';
+    infoBox.style.display='none';
+  } else {
+    badge.textContent='Panel admina →'; badge.className='mode-badge guest';
+    label.textContent='Widok gościa';
+    infoBox.style.display='';
+  }
+}
+
+// ─────────────────── GUEST BOOKING ───────────────────
+function openGuestModal(){
+  gStep=1; gSelectedZone=null; gSelectedSlot=null; gGeneratedPin=null;
+  document.getElementById('g-inp-guest').value='';
+  document.querySelectorAll('.error-msg').forEach(e=>e.style.display='none');
+  document.getElementById('gstep3-confirm').style.display='block';
+  document.getElementById('gstep3-done').style.display='none';
+  document.getElementById('gbm-nav').style.display='flex';
+  document.getElementById('gbm-next').textContent='Dalej →';
+  buildGuestZoneSelector();
+  gUpdateStepUI();
+  document.getElementById('guestBookingModal').classList.add('open');
+  setTimeout(()=>document.getElementById('g-inp-guest').focus(),100);
+}
+window.closeGuestModal = function(){
+  document.getElementById('guestBookingModal').classList.remove('open');
+};
+
+function buildGuestZoneSelector(){
+  const c=document.getElementById('g-zone-selector');
+  c.innerHTML='';
+  ZONES.forEach(zone=>{
+    const div=document.createElement('div');
+    div.className='zone-opt';
+    div.dataset.zoneId=zone.id;
+    const badges=zone.facilities.map(f=>'<span class="badge '+FAC_CLASS[f]+'">'+f+'</span>').join('');
+    div.innerHTML='<div class="zone-opt-name">'+zone.name+'</div><div class="zone-opt-sub">'+zone.sub+'</div><div class="zone-opt-badges">'+badges+'</div>';
+    div.addEventListener('click',()=>{
+      document.querySelectorAll('.zone-opt').forEach(z=>z.classList.remove('selected'));
+      div.classList.add('selected');
+      gSelectedZone=zone;
+      gSelectedSlot=null;
+      buildGuestSlotSelector(zone);
+      document.getElementById('g-slot-section').style.display='block';
+      document.getElementById('g-err-zone').style.display='none';
+    });
+    c.appendChild(div);
+  });
+}
+
+function buildGuestSlotSelector(zone){
+  const c=document.getElementById('g-slot-selector');
+  c.innerHTML='';
+  SLOTS.forEach(slot=>{
+    const key=resKey(selectedDate,zone.id,slot);
+    const taken=!!reservations[key];
+    const div=document.createElement('div');
+    div.className='slot-opt'+(taken?' slot-opt-taken':'');
+    div.innerHTML='<span class="slot-opt-time">'+slot+'</span><span class="slot-opt-status">'+(taken?'Zajęty':'Wolny')+'</span>';
+    if(!taken){
+      div.addEventListener('click',()=>{
+        document.querySelectorAll('.slot-opt').forEach(s=>s.classList.remove('selected'));
+        div.classList.add('selected');
+        gSelectedSlot=slot;
+        document.getElementById('g-err-slot').style.display='none';
+      });
+    }
+    c.appendChild(div);
+  });
+}
+
+function gUpdateStepUI(){
+  [1,2,3].forEach(i=>{
+    document.getElementById('gstep'+i).classList.toggle('active',i===gStep);
+    const dot=document.getElementById('gsd'+i);
+    dot.classList.remove('active','done');
+    if(i===gStep) dot.classList.add('active');
+    else if(i<gStep) dot.classList.add('done');
+  });
+  document.getElementById('gbm-back').style.display=gStep>1?'block':'none';
+  document.getElementById('gbm-next').textContent=gStep===3?'Potwierdź rezerwację':'Dalej →';
+}
+
+window.gStepBack = function(){
+  if(gStep>1){ gStep--; gUpdateStepUI(); }
+};
+
+window.gStepNext = async function(){
+  if(gStep===1){
+    const guest=document.getElementById('g-inp-guest').value.trim();
+    if(!guest){ document.getElementById('g-err1').style.display='block'; return; }
+    document.getElementById('g-err1').style.display='none';
+    // rebuild zone selector with fresh data
+    buildGuestZoneSelector();
+    document.getElementById('g-slot-section').style.display='none';
+    gSelectedZone=null; gSelectedSlot=null;
+    gStep=2; gUpdateStepUI();
+  } else if(gStep===2){
+    if(!gSelectedZone){ document.getElementById('g-err-zone').style.display='block'; return; }
+    if(!gSelectedSlot){ document.getElementById('g-err-slot').style.display='block'; return; }
+    // build summary
+    const guest=document.getElementById('g-inp-guest').value.trim();
+    document.getElementById('g-summary').innerHTML=
+      '<b>Gość:</b> '+guest+'<br>'+
+      '<b>Strefa:</b> '+gSelectedZone.name+' ('+gSelectedZone.sub+')<br>'+
+      '<b>Godzina:</b> '+gSelectedSlot+'<br>'+
+      '<b>Data:</b> '+fmtDate(selectedDate);
+    gStep=3; gUpdateStepUI();
+    document.getElementById('gbm-next').textContent='Potwierdź rezerwację';
+  } else {
+    // save
+    const guest=document.getElementById('g-inp-guest').value.trim();
+    const pin=genPin();
+    gGeneratedPin=pin;
+    const key=resKey(selectedDate,gSelectedZone.id,gSelectedSlot);
+    // double-check not taken
+    if(reservations[key]){ alert('Ten slot właśnie został zajęty! Wybierz inny.'); gStep=2; gUpdateStepUI(); return; }
+    await saveRes(key,{
+      guest, facilities: gSelectedZone.facilities,
+      source:'guest', payType:'pending', payStatus:null,
+      amount:'', notes:'', worker:'', pin
+    });
+    // show PIN
+    document.getElementById('g-pin-display').textContent=pin;
+    document.getElementById('gstep3-confirm').style.display='none';
+    document.getElementById('gstep3-done').style.display='block';
+    document.getElementById('gbm-back').style.display='none';
+    document.getElementById('gbm-next').style.display='none';
+    // add close button
+    const nav=document.getElementById('gbm-nav');
+    const closeBtn=document.createElement('button');
+    closeBtn.className='btn-primary';
+    closeBtn.textContent='Zamknij';
+    closeBtn.onclick=window.closeGuestModal;
+    nav.appendChild(closeBtn);
+  }
+};
+
+// ─────────────────── GUEST CANCEL ───────────────────
+window.openGuestCancel = function(key){
+  cancelTargetKey=key;
+  const res=reservations[key];
+  // show reservation details in subtitle
+  let sub='Wpisz 4-cyfrowy kod PIN, który otrzymałeś przy rezerwacji.';
+  if(res){
+    const parts=key.split('__');
+    const zoneId=parts[1];
+    const zoneObj=ZONES.find(z=>z.id===zoneId);
+    const slot=parts.slice(2).join('__').replace(/_/g,':').replace(/(\d\d):(\d\d)_(\d\d):(\d\d)/,'$1:$2–$3:$4');
+    sub='<b>'+(zoneObj?zoneObj.name:zoneId)+'</b> · '+slot+' · '+fmtDate(selectedDate)+'<br><span style="color:var(--text-hint)">Wpisz kod PIN aby anulować.</span>';
+  }
+  document.getElementById('gcm-sub').innerHTML=sub;
+  document.getElementById('gcm-err').style.display='none';
+  document.getElementById('gcm-pin').value='';
+  document.getElementById('gcm-form').style.display='block';
+  document.getElementById('gcm-success').style.display='none';
+  document.getElementById('guestCancelModal').classList.add('open');
+  setTimeout(()=>document.getElementById('gcm-pin').focus(),100);
+};
+window.closeGuestCancelModal = function(){
+  document.getElementById('guestCancelModal').classList.remove('open');
+};
+window.confirmGuestCancel = async function(){
+  const pin=document.getElementById('gcm-pin').value.trim();
+  const res=reservations[cancelTargetKey];
+  if(!res||String(res.pin)!==String(pin)){
+    document.getElementById('gcm-err').style.display='block';
+    document.getElementById('gcm-pin').select();
+    return;
+  }
+  await removeRes(cancelTargetKey);
+  // show success screen
+  document.getElementById('gcm-form').style.display='none';
+  document.getElementById('gcm-success').style.display='block';
+};
+
+// ─────────────────── ADMIN BOOKING ───────────────────
+function openAdminBooking(zoneId,zoneName,slot,facsStr){
+  aPendingZone={id:zoneId,name:zoneName,facilities:facsStr.split(',')};
+  aPendingSlot=slot; aStep=1; aSelectedPayStatus=null;
+  document.getElementById('abm-title').textContent='Rezerwacja — '+zoneName;
+  document.getElementById('abm-sub').textContent=slot+' · '+fmtDate(selectedDate);
+  ['a-inp-guest','a-inp-worker','a-inp-amount','a-inp-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-pay-included').checked=true;
+  document.getElementById('a-amount-block').style.display='none';
+  aResetPayStatusBtns();
+  document.querySelectorAll('.error-msg').forEach(e=>e.style.display='none');
+  const cb=document.getElementById('a-fac-checkboxes');
+  cb.innerHTML='';
+  aPendingZone.facilities.forEach(f=>{
+    const lbl=document.createElement('label');
+    lbl.className='fac-cb';
+    lbl.innerHTML='<input type="checkbox" value="'+f+'" onchange="aUpdateChipStyle(this)"> '+f;
+    cb.appendChild(lbl);
+  });
+  aUpdateStepUI();
+  document.getElementById('adminBookingModal').classList.add('open');
+  setTimeout(()=>document.getElementById('a-inp-guest').focus(),100);
+}
+window.closeAdminBookingModal = function(){ document.getElementById('adminBookingModal').classList.remove('open'); };
+window.aOnPayTypeChange = function(){
+  const isAmt=document.getElementById('a-pay-amount').checked;
+  document.getElementById('a-amount-block').style.display=isAmt?'block':'none';
+  if(!isAmt){aSelectedPayStatus=null;aResetPayStatusBtns();}
+};
+window.aSelectPayStatus = function(val){
+  aSelectedPayStatus=val;
+  document.getElementById('a-ps-paid').className='pay-status-btn'+(val==='paid'?' sel-paid':'');
+  document.getElementById('a-ps-unpaid').className='pay-status-btn'+(val==='unpaid'?' sel-unpaid':'');
+  document.getElementById('a-err-status').style.display='none';
+};
+function aResetPayStatusBtns(){
+  document.getElementById('a-ps-paid').className='pay-status-btn';
+  document.getElementById('a-ps-unpaid').className='pay-status-btn';
+}
+window.aUpdateChipStyle = function(cb){ cb.parentElement.classList.toggle('selected',cb.checked); };
+function aUpdateStepUI(){
+  [1,2,3].forEach(i=>{
+    document.getElementById('astep'+i).classList.toggle('active',i===aStep);
+    const dot=document.getElementById('asd'+i);
+    dot.classList.remove('active','done');
+    if(i===aStep) dot.classList.add('active');
+    else if(i<aStep) dot.classList.add('done');
+  });
+  document.getElementById('abm-back').style.display=aStep>1?'block':'none';
+  document.getElementById('abm-next').textContent=aStep===3?'Zatwierdź ✓':'Dalej →';
+}
+window.aStepBack = function(){ if(aStep>1){aStep--;aUpdateStepUI();} };
+window.aStepNext = async function(){
+  if(aStep===1){
+    const guest=document.getElementById('a-inp-guest').value.trim();
+    const checked=[...document.querySelectorAll('#a-fac-checkboxes input:checked')];
+    let ok=true;
+    if(!guest){document.getElementById('a-err1').style.display='block';ok=false;}else document.getElementById('a-err1').style.display='none';
+    if(!checked.length){document.getElementById('a-err-fac').style.display='block';ok=false;}else document.getElementById('a-err-fac').style.display='none';
+    if(!ok)return;
+    aStep=2;aUpdateStepUI();setTimeout(()=>document.getElementById('a-inp-worker').focus(),100);
+  } else if(aStep===2){
+    const worker=document.getElementById('a-inp-worker').value.trim();
+    if(!worker){document.getElementById('a-err2').style.display='block';return;}
+    document.getElementById('a-err2').style.display='none';
+    aStep=3;aUpdateStepUI();
+  } else {
+    const payType=document.querySelector('input[name=apaytype]:checked').value;
+    if(payType==='amount'&&!aSelectedPayStatus){document.getElementById('a-err-status').style.display='block';return;}
+    const key=resKey(selectedDate,aPendingZone.id,aPendingSlot);
+    await saveRes(key,{
+      guest:document.getElementById('a-inp-guest').value.trim(),
+      worker:document.getElementById('a-inp-worker').value.trim(),
+      facilities:[...document.querySelectorAll('#a-fac-checkboxes input:checked')].map(c=>c.value),
+      source:'admin', payType,
+      amount:payType==='amount'?document.getElementById('a-inp-amount').value:'',
+      payStatus:payType==='amount'?aSelectedPayStatus:null,
+      notes:document.getElementById('a-inp-notes').value.trim(),
+      pin:null
+    });
+    window.closeAdminBookingModal();
+  }
+};
+
+// ─────────────────── DETAIL MODAL (admin) ───────────────────
+function openDetail(key){
+  detailKey=key;
+  const res=reservations[key];
+  if(!res)return;
+  const parts=key.split('__');
+  const zoneId=parts[1];
+  const zoneObj=ZONES.find(z=>z.id===zoneId);
+  const slot=parts.slice(2).join('__').replace(/_/g,':').replace(/(\d\d):(\d\d)_(\d\d):(\d\d)/,'$1:$2–$3:$4');
+  document.getElementById('dm-title').textContent=zoneObj?zoneObj.name:zoneId;
+  document.getElementById('dm-sub').textContent=fmtDate(selectedDate);
+  renderDetailRows(res);
+  updateDetailPayBtns(res);
+  document.getElementById('detailModal').classList.add('open');
+}
+function renderDetailRows(res){
+  const payLabel=res.payType==='included'?'W cenie pobytu':(res.amount?res.amount+' zł':'Opłata dodatkowa');
+  const rows=[
+    ['Gość',res.guest],
+    ['Urządzenia',res.facilities?res.facilities.join(', '):'-'],
+    res.worker?['Pracownik',res.worker]:null,
+    ['Źródło',sourcePill(res)],
+    ['Rozliczenie',res.payType==='pending'?'Oczekuje na admina':payLabel],
+    ['Status płatności',payPill(res)],
+    res.notes?['Uwagi',res.notes]:null
+  ].filter(Boolean);
+  document.getElementById('dm-rows').innerHTML=rows.map(([k,v])=>'<div class="detail-row"><span class="detail-key">'+k+'</span><span class="detail-val">'+v+'</span></div>').join('');
+}
+function updateDetailPayBtns(res){
+  const cur=res.payType==='included'?'included':res.payStatus;
+  document.getElementById('dm-btn-included').className='dm-pay-btn'+(cur==='included'?' active-included':'');
+  document.getElementById('dm-btn-paid').className='dm-pay-btn'+(cur==='paid'?' active-paid':'');
+  document.getElementById('dm-btn-unpaid').className='dm-pay-btn'+(cur==='unpaid'?' active-unpaid':'');
+}
+window.setDetailPay = async function(val){
+  const res=reservations[detailKey]; if(!res)return;
+  if(val==='included'){res.payType='included';res.payStatus=null;res.amount='';}
+  else{res.payType='amount';res.payStatus=val;}
+  await saveRes(detailKey,res);
+  renderDetailRows(res); updateDetailPayBtns(res);
+};
+window.closeDetailModal = function(){ document.getElementById('detailModal').classList.remove('open'); };
+window.deleteFromDetail = async function(){
+  if(!confirm('Usunąć tę rezerwację?'))return;
+  await removeRes(detailKey);
+  window.closeDetailModal();
+};
+
+// ─────────────────── CLOSE ON BG CLICK ───────────────────
+['guestBookingModal','guestCancelModal','adminLoginModal','adminBookingModal','detailModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    if(e.target===document.getElementById(id)) document.getElementById(id).classList.remove('open');
+  });
+});
+
+// ─────────────────── INIT ───────────────────
+const today=new Date().toISOString().split('T')[0];
+document.getElementById('datePicker').value=today;
+selectedDate=today;
+subscribeToDate(today);
+document.getElementById('datePicker').addEventListener('change',e=>{
+  selectedDate=e.target.value;
+  subscribeToDate(selectedDate);
+});
+</script>
+</body>
+</html>
